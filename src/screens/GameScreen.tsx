@@ -1,22 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Pressable, View, Text } from 'react-native';
 import { createScreen } from '@/components/createScreen';
-import { Game } from '@/components/game';
+import { useGame } from '@/components/game';
 import { ResultModal } from '@/components/game/resultModal';
 import { Card } from '@/types';
 
 export const GameScreen = createScreen('Game', ({ route, navigation }) => {
   const { level } = route.params;
-  const [game] = useState(new Game(level));
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [cards, setCards] = useState<Card[]>(game.getCards());
+  const { init, level: gamelevel, cards, flipCard, checkWin } = useGame();
 
   useEffect(() => {
     console.log('Game Screen - Level', level);
-    if (level !== game.getLevel()) {
+    if (level !== gamelevel) {
       console.log('Next level');
-      game.nextLevel();
-      setCards([...game.getCards()]);
+      init(level);
     }
   }, [level]);
 
@@ -27,12 +25,9 @@ export const GameScreen = createScreen('Game', ({ route, navigation }) => {
 
   const handleCardPress = async (card: Card) => {
     if (card.canFlip) {
-      await game.flipCard(card).then(() => {
-        setCards([...game.getCards()]);
-        console.log('Cards', cards);
-      });
+      await flipCard(card);
 
-      if (game.checkWin()) {
+      if (checkWin()) {
         setIsModalVisible(true);
       }
     }
@@ -50,7 +45,7 @@ export const GameScreen = createScreen('Game', ({ route, navigation }) => {
 
       {/* Display cards in a matrix */}
       <View className="flex flex-wrap justify-center">
-        {cards.map((card, index) => (
+        {cards.map((card: Card, index: any) => (
           <Pressable
             key={index}
             className="m-2"

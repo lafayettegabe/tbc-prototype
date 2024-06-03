@@ -1,84 +1,76 @@
 import { createLevel } from "@/components/game/createLevel";
 import { Card } from "@/types";
 
-export class Game {
-    private level: number;
-    private cards: Card[];
-    private flippedCards: Card[];
+import { create } from "zustand"
 
-    constructor(level: number) {
-        this.level = level;
-        this.cards = [];
-        this.flippedCards = [];
-        this.init();
-    }
+type GameState = {
+    level: number;
+    cards: Card[];
+    flippedCards: Card[];
+    init: (level: number) => void;
+    flipCard: (card: Card) => void;
+    checkMatch: (flippedCards: Card[], cards: Card[]) => void;
+    checkWin: () => boolean;
+}
 
-    private init() {
-        this.cards = createLevel(this.level);
-        console.log("init cards", this.cards);
-    }
-
-    public nextLevel() {
-        this.level += 1;
-        this.init();
-    }
-
-    public async flipCard(card: Card) {
-        console.log("Card flipped", card.id)
-
-        this.flippedCards.push(card);
-        this.cards = this.cards.map(c => {
-            if (c.id === card.id) {
-                return { ...c, isFlipped: true, canFlip: false };
+export const useGame: any = create<GameState>((set) => ({
+    level: 1,
+    cards: createLevel(1),
+    flippedCards: [],
+    init: (level: number) => {
+        set({ level, cards: createLevel(level), flippedCards: [] });
+    },
+    flipCard: (card: Card) => {
+        set((state) => {
+            const flippedCards = [...state.flippedCards, card];
+            if (flippedCards.length > 2) {
+                return state;
             }
-            return c;
+            const cards = state.cards.map(c => {
+                if (c.id === card.id) {
+                    return { ...c, isFlipped: true, canFlip: false };
+                }
+                return c;
+            });
+
+            if (flippedCards.length === 2) {
+                const { checkMatch } = useGame.getState();
+                setTimeout(() => checkMatch(flippedCards, cards), 500);
+            }
+
+            return { ...state, flippedCards, cards };
         });
-
-        if (this.flippedCards.length === 2) {
-            await this.checkMatch();
-        }
-
-        await delay(500);
-    }
-
-    private async checkMatch() {
-        const [firstCard, secondCard] = this.flippedCards;
+    },
+    checkMatch: (flippedCards: Card[], cards: Card[]) => {
+        const [firstCard, secondCard] = flippedCards;
 
         if (firstCard.value === secondCard.value) {
             console.log("Matched", firstCard.value);
-            this.cards = this.cards.map(card => {
+            const newCards = cards.map(card => {
                 if (card.value === firstCard.value) {
                     return { ...card, isFlipped: true, canFlip: false };
                 }
                 return card;
             });
+
+            set((state) => ({ ...state, cards: newCards }));
         } else {
             console.log("Not matched", firstCard.value, secondCard.value);
-            
-            await delay(1000).then(() => {
-                this.cards = this.cards.map(card => {
+            setTimeout(() => {
+                const newCards = cards.map(card => {
                     if (card.id === firstCard.id || card.id === secondCard.id) {
                         return { ...card, isFlipped: false, canFlip: true };
                     }
                     return card;
                 });
-            });
+
+                set((state) => ({ ...state, cards: newCards }));
+            }, 100);
         }
 
-        this.flippedCards = [];
+        set((state) => ({ ...state, flippedCards: [] }));
+    },
+    checkWin: () => {
+        return useGame.getState().cards.every((card: Card) => !card.canFlip);
     }
-
-    public getCards() {
-        return this.cards;
-    }
-
-    public getLevel() {
-        return this.level;
-    }
-
-    public checkWin() {
-        return this.cards.every(card => !card.canFlip);
-    }
-}
-
-const delay = (ms: number | undefined) => new Promise(res => setTimeout(res, ms));
+}));

@@ -8,5 +8,5 @@ export function createLevel(level: number) {
         canFlip: true,
     })) as Card[];
 
-    return cards;
+    return cards.sort(() => Math.random() - 0.5);
 }
