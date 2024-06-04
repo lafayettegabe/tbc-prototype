@@ -3,11 +3,11 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 
 import { HomeScreen } from '@/screens/HomeScreen';
-import { GameScreen } from '@/screens/GameScreen';
+import { BattleScreen } from '@/screens/BattleScreen';
 
 export type RootStackParamList = {
   Home: undefined;
-  Game: { level: number };
+  Battle: { stage: number };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -32,9 +32,9 @@ export default function Navigator() {
           component={HomeScreen}
         />
         <Stack.Screen 
-          name="Game" 
-          component={GameScreen}
-          options={({ route }) => ({ title: `Level ${route.params?.level}` })}
+          name="Battle" 
+          component={BattleScreen}
+          options={({ route }) => ({ title: `Battle ${route.params?.stage}` })}
         />
       </Stack.Navigator>
     </NavigationContainer>

@@ -5,11 +5,11 @@ import { createScreen } from '@/components/createScreen';
 export const HomeScreen = createScreen('Home', ({ navigation }) => (
   <View className="flex-1 items-center justify-center bg-black">
     <Text className="text-white text-4xl mb-8 font-bold">
-      Matching Game!
+      Turn-Based Battle System Prototype
     </Text>
     <Pressable
       style={styles.button}   
-      onPress={() => navigation.navigate('Game', { level: 1 })}
+      onPress={() => navigation.navigate('Battle', { stage: 1 })}
     >
       <Text className="text-white text-2xl">Start</Text>
     </Pressable>
