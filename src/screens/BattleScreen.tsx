@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, Button, FlatList, StyleSheet } from 'react-native';
 import { useBattleStore } from '@/components/battle';
 
@@ -8,7 +8,7 @@ const sampleParty = [
     name: 'Hero',
     lvl: 10,
     hp: { current: 100, max: 100 },
-    atk: { current: 15, max: 15 },
+    atk: { current: 30, max: 30 },
     def: { current: 10, max: 10 },
     spd: { current: 5, max: 5 },
   },
@@ -37,12 +37,40 @@ const sampleEnemies = [
 
 export function BattleScreen() {
   const battle = useBattleStore((state) => state);
+  const isPlayerTurn = battle.currentCharacter && battle.party.includes(battle.currentCharacter) || false;
+  const isEnemyTurn = battle.currentCharacter && battle.enemies.includes(battle.currentCharacter) || false;
+  
+  useEffect(() => {
+    const handleTurn = async () => {
+      if (isEnemyTurn) {
+        console.log('Battle: Enemy Turn');
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        battle.attack();
+        battle.nextCharacter();
+      } else if (battle.queue.length === 0 && battle.turn > 0) {
+          battle.nextTurn();
+          console.log('Battle: Loading next turn');
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+          battle.nextCharacter();
+      } else if (battle.queue.length === 0 && battle.turn === 0) {
+          console.log('Battle: Initializing battle');
+          battle.initBattle(sampleParty, sampleEnemies);
+          battle.nextTurn();
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+          battle.nextCharacter();
+      } else {
+          console.log('Battle: Player Turn');
+      }
+    }
+    if (battle.state === 'battle') {
+      handleTurn();
+    }
+  }, [battle.currentCharacter]);
 
-  const handleInitBattle = () => {
-    battle.initBattle(sampleParty, sampleEnemies);
-  };
+  /* handleAction, then */
 
-  const handleNextCharacter = () => {
+  const handleAttack = async () => {
+    battle.attack();
     battle.nextCharacter();
   };
 
@@ -54,9 +82,7 @@ export function BattleScreen() {
         <Text>Current Character: {battle.currentCharacter && battle.characters.find((c) => c.id === battle.currentCharacter)?.name}</Text>
         <Text>Current Target: {battle.currentTarget && battle.characters.find((c) => c.id === battle.currentTarget)?.name}</Text>
         <Text>Queue: {battle.queue.map((character) => character && battle.characters.find((c) => c.id === character)?.name).join(', ')}</Text>
-        <Button title="Init Battle" onPress={handleInitBattle} />
-        <Button title="Next Character" onPress={handleNextCharacter} />
-
+      
         <Text>Log:</Text>
         <FlatList
           data={battle.log}
@@ -68,21 +94,22 @@ export function BattleScreen() {
       <View className='justify-center'>
         <Text>Enemies:</Text>
         {battle.enemies.length > 0 && battle.enemies.map((enemy) => (
-          battle.characters[enemy-1] === undefined ? null : (
-            <Text key={battle.characters.find((c) => c.id === enemy)?.id}>
-              {battle.characters.find((c) => c.id === enemy)?.name} (HP: {battle.characters.find((c) => c.id === enemy)?.hp.current}/{battle.characters.find((c) => c.id === enemy)?.hp.max})
-            </Text>
-          )
+          <Text key={battle.characters.find((c) => c.id === enemy)?.id}>
+            {battle.characters.find((c) => c.id === enemy)?.name} (HP: {battle.characters.find((c) => c.id === enemy)?.hp.current}/{battle.characters.find((c) => c.id === enemy)?.hp.max})
+          </Text>
         ))}
 
         <Text>Party</Text>
-        {battle.party.length > 0 &&
-          battle.party.map((character) => (
-            <Text key={battle.characters.find((c) => c.id === character)?.id}>
-              {battle.characters.find((c) => c.id === character)?.name} (HP: {battle.characters.find((c) => c.id === character)?.hp.current}/{battle.characters.find((c) => c.id === character)?.hp.max})
-            </Text>
+        {battle.party.length > 0 && battle.party.map((character) => (
+          <Text key={battle.characters.find((c) => c.id === character)?.id}>
+            {battle.characters.find((c) => c.id === character)?.name} (HP: {battle.characters.find((c) => c.id === character)?.hp.current}/{battle.characters.find((c) => c.id === character)?.hp.max})
+          </Text>
           ))}
       </View>
+
+      {isPlayerTurn && (
+        <Button title="Attack" onPress={handleAttack} />
+      )}
     </View>
   );
 };
